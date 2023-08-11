@@ -153,37 +153,8 @@
             return v;
           }
 
-          function easeInOutCubic(p) {
-            return p<0.5 ? 4*p*p*p : (p-1)*(2*p-2)*(2*p-2)+1;
-          }
-
-          function updateSlider(value) {
-            let count = 0;
-            let tmp1, tmp2;
-            if (n === 0) {
-              n++;
-              blob = document.getElementById("background");
-
-              tmp1 = 100 + blob.clientWidth / 2 - 5;
-              tmp2 = -100 + blob.clientWidth / 2 - 5;
-            } else {
-              tmp1 = points[2][0];
-              tmp2 = points[6][0];
-            }
-
-            let id = setInterval(function(){
-              if (value < pvalue) {
-                points[2][0] = tmp1 - (pvalue - value) * 2 * easeInOutCubic(p);
-                points[6][0] = tmp2 - (pvalue - value) * 2 * easeInOutCubic(p);
-                tmp1 = points[2][0];
-                tmp2 = points[6][0];
-              } else {
-                points[2][0] = tmp1 + (value - pvalue) * 2 * easeInOutCubic(p);
-                points[6][0] = tmp2 + (value - pvalue) * 2 * easeInOutCubic(p);
-                tmp1 = points[2][0];
-                tmp2 = points[6][0];
-              }
-              var myCanvas = new fabric.StaticCanvas("c");
+          function drawsvg() {
+            var myCanvas = new fabric.StaticCanvas("c");
               myCanvas.setWidth(
                 blob.clientWidth > 500 ? 800 : blob.clientWidth
               );
@@ -234,6 +205,40 @@
               let svg = myCanvas.toSVG();
 
               document.getElementById("background").innerHTML = svg;
+          }
+
+          function easeInOutCubic(p) {
+            return p<0.5 ? 4*p*p*p : (p-1)*(2*p-2)*(2*p-2)+1;
+          }
+
+          function updateSlider(value) {
+            let count = 0;
+            let tmp1, tmp2;
+            if (n === 0) {
+              n++;
+              blob = document.getElementById("background");
+
+              tmp1 = 100 + blob.clientWidth / 2 - 5;
+              tmp2 = -100 + blob.clientWidth / 2 - 5;
+            } else {
+              tmp1 = points[2][0];
+              tmp2 = points[6][0];
+            }
+
+            let id = setInterval(function(){
+              if (value < pvalue) {
+                points[2][0] = tmp1 - (pvalue - value) * 2 * easeInOutCubic(p);
+                points[6][0] = tmp2 - (pvalue - value) * 2 * easeInOutCubic(p);
+                tmp1 = points[2][0];
+                tmp2 = points[6][0];
+              } else {
+                points[2][0] = tmp1 + (value - pvalue) * 2 * easeInOutCubic(p);
+                points[6][0] = tmp2 + (value - pvalue) * 2 * easeInOutCubic(p);
+                tmp1 = points[2][0];
+                tmp2 = points[6][0];
+              }
+              
+              drawsvg();
 
               count ++;
               p += 0.05;
@@ -320,56 +325,8 @@
                 tmp1 = points[0][1];
                 tmp2 = points[4][1];
               }
-              var myCanvas = new fabric.StaticCanvas("c");
-              myCanvas.setWidth(
-                blob.clientWidth > 500 ? 800 : blob.clientWidth
-              );
-              myCanvas.setHeight(600);
-              let pts = points;
-              let f =
-                config.scheme == "LR"
-                  ? (pts) => lr(pts, config.degree)
-                  : config.scheme == "4 points"
-                  ? (pts) => fourPoint(pts)
-                  : (pts) => lr4(pts, config.degree);
-              for (let i = 0; i < config.subdiv; i++) pts = f(pts);
-
-              let pathString =
-                "M" + pts.map((p) => p.join(",")).join("L") + "Z";
-
-              let path = new fabric.Path(pathString, {
-                stroke: "rgba(255,255,255,0)",
-                fill: "rgba(235,0,255,0.8)",
-              });
-              let gradient = new fabric.Gradient({
-                type: "radial",
-                coords: {
-                  r1: 0,
-                  r2: path.width / 3,
-                  x1: path.width / 3,
-                  y1: path.height / 3,
-                  x2: path.width / 3,
-                  y2: path.height / 3,
-                },
-                colorStops: [
-                  {
-                    offset: 0,
-                    color: "rgba(235,0,255,0)",
-                  },
-                  {
-                    offset: 1,
-                    color: "rgba(235,0,255,0.3)",
-                  },
-                ],
-              });
-
-              path.set("fill", gradient);
-
-              myCanvas.add(path);
-
-              let svg = myCanvas.toSVG();
-
-              document.getElementById("background").innerHTML = svg;
+              
+              drawsvg();
 
               count ++;
               p += 0.05;
@@ -468,56 +425,7 @@
                 tmp4 = points[5][1];
               }
 
-              var myCanvas = new fabric.StaticCanvas("c");
-              myCanvas.setWidth(
-                blob.clientWidth > 500 ? 800 : blob.clientWidth
-              );
-              myCanvas.setHeight(600);
-              let pts = points;
-              let f =
-                config.scheme == "LR"
-                  ? (pts) => lr(pts, config.degree)
-                  : config.scheme == "4 points"
-                  ? (pts) => fourPoint(pts)
-                  : (pts) => lr4(pts, config.degree);
-              for (let i = 0; i < config.subdiv; i++) pts = f(pts);
-
-              let pathString =
-                "M" + pts.map((p) => p.join(",")).join("L") + "Z";
-
-              let path = new fabric.Path(pathString, {
-                stroke: "rgba(255,255,255,0)",
-                fill: "rgba(235,0,255,0.8)",
-              });
-              let gradient = new fabric.Gradient({
-                type: "radial",
-                coords: {
-                  r1: 0,
-                  r2: path.width / 3,
-                  x1: path.width / 3,
-                  y1: path.height / 3,
-                  x2: path.width / 3,
-                  y2: path.height / 3,
-                },
-                colorStops: [
-                  {
-                    offset: 0,
-                    color: "rgba(235,0,255,0)",
-                  },
-                  {
-                    offset: 1,
-                    color: "rgba(235,0,255,0.3)",
-                  },
-                ],
-              });
-
-              path.set("fill", gradient);
-
-              myCanvas.add(path);
-
-              let svg = myCanvas.toSVG();
-
-              document.getElementById("background").innerHTML = svg;
+              drawsvg();
 
               count ++;
               p += 0.05;
@@ -615,56 +523,7 @@
                 tmp4 = points[3][1];
               }
 
-              var myCanvas = new fabric.StaticCanvas("c");
-              myCanvas.setWidth(
-                blob.clientWidth > 500 ? 800 : blob.clientWidth
-              );
-              myCanvas.setHeight(600);
-              let pts = points;
-              let f =
-                config.scheme == "LR"
-                  ? (pts) => lr(pts, config.degree)
-                  : config.scheme == "4 points"
-                  ? (pts) => fourPoint(pts)
-                  : (pts) => lr4(pts, config.degree);
-              for (let i = 0; i < config.subdiv; i++) pts = f(pts);
-
-              let pathString =
-                "M" + pts.map((p) => p.join(",")).join("L") + "Z";
-
-              let path = new fabric.Path(pathString, {
-                stroke: "rgba(255,255,255,0)",
-                fill: "rgba(235,0,255,0.8)",
-              });
-              let gradient = new fabric.Gradient({
-                type: "radial",
-                coords: {
-                  r1: 0,
-                  r2: path.width / 3,
-                  x1: path.width / 3,
-                  y1: path.height / 3,
-                  x2: path.width / 3,
-                  y2: path.height / 3,
-                },
-                colorStops: [
-                  {
-                    offset: 0,
-                    color: "rgba(235,0,255,0)",
-                  },
-                  {
-                    offset: 1,
-                    color: "rgba(235,0,255,0.3)",
-                  },
-                ],
-              });
-
-              path.set("fill", gradient);
-
-              myCanvas.add(path);
-
-              let svg = myCanvas.toSVG();
-
-              document.getElementById("background").innerHTML = svg;
+              drawsvg();
 
               count ++;
               p += 0.05;
