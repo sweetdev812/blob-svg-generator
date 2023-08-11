@@ -19,9 +19,8 @@
         width: 80%;
     }
     .background {
-        width: 800px;
-        min-width: 800px;
-        height: 600px;
+        width: 450px;
+        height: 350px;
         background-size: 100%;
         background-image: url('./background.png');
         background-repeat: no-repeat;
