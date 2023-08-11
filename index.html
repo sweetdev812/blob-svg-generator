@@ -1,0 +1,728 @@
+<html>
+  <head>
+    <title>Blobs</title>
+    <link rel="stylesheet" href="./index.css" />
+  </head>
+  <body>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fabric@4.6.0/dist/fabric.min.js"></script>
+    <div class="main">
+      <div class="blobs" id="blob">
+        <div class="background" id="background"></div>
+      </div>
+      <div class="sliders">
+        <div class="space"></div>
+        <div class="slider-part">
+          <div class="text-group">
+            <div class="text1">Body</div>
+            <div class="text2">Bold</div>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="7"
+            class="slider"
+            id="slider1"
+            onchange="updateSlider(this.value)"
+          />
+          <div class="text-group">
+            <div class="text3">Light</div>
+            <div class="text3">Medium</div>
+            <div class="text3">Full</div>
+          </div>
+        </div>
+        <script>
+          var blob = document.getElementById("background");
+          window.onresize = updateDivs;
+          function updateDivs() {
+            location.reload();
+          }
+          let points = [
+            [blob.clientWidth / 2 - 5, -100 + blob.clientHeight / 2 - 5],
+            [blob.clientWidth / 2 + 70, -70 + blob.clientHeight / 2 - 5],
+            [blob.clientWidth / 2 + 95, 0 + blob.clientHeight / 2 - 5],
+            [blob.clientWidth / 2 + 70, 70 + blob.clientHeight / 2 - 5],
+            [blob.clientWidth / 2 - 5, 100 + blob.clientHeight / 2 - 5],
+            [blob.clientWidth / 2 - 80, 70 + blob.clientHeight / 2 - 5],
+            [blob.clientWidth / 2 - 105, 0 + blob.clientHeight / 2 - 5],
+            [blob.clientWidth / 2 - 80, -70 + blob.clientHeight / 2 - 5],
+          ];
+          let n = 0;
+          let p = 0.05;
+          let pvalue = 4;
+          let pvalue2 = 4;
+          let pvalue3 = 4;
+          let pvalue4 = 4;
+          let radius = 300;
+          let centerX = 495;
+          let centerY = 360;
+          let totalPoints = 8;
+
+          polygonDemo(points);
+
+          let config = {
+            scheme: "LR",
+            degree: 2,
+            subdiv: 8,
+            w: 0.5,
+          };
+
+          var gradient = ctx.createLinearGradient(
+            0,
+            0,
+            ctx.canvas.width,
+            ctx.canvas.height
+          );
+
+          gradient.addColorStop(0, "rgba(235,0,255,0.3)");
+          gradient.addColorStop(1, "rgba(235,0,255,0.9)");
+
+          polygonDemo(points, {
+            change: function (ctx, points) {
+              ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+              let pts = points;
+              let f =
+                config.scheme == "LR"
+                  ? (pts) => lr(pts, config.degree)
+                  : config.scheme == "4 points"
+                  ? (pts) => fourPoint(pts)
+                  : (pts) => lr4(pts, config.degree);
+              for (let i = 0; i < config.subdiv; i++) pts = f(pts);
+
+              ctx.fillStyle = "rgba(235,0,255,0.5)";
+
+              ctx.strokeStyle = "rgba(255,255,255,0)";
+
+              ctx.beginPath();
+              for (let p of pts) {
+                ctx.lineTo(...p);
+              }
+              ctx.closePath();
+              ctx.fill();
+            },
+          });
+
+          function polygonDemo(points, options = {}) {
+            const {
+              width = blob.clientWidth > 500 ? 800 : blob.clientWidth,
+              height = 600,
+              change = (ctx, points, i) => {},
+              doubleClick = (ctx, points, i) => {},
+            } = options;
+
+            let canvas = document.querySelector("canvas");
+            if (!canvas) {
+              canvas = document.createElement("canvas");
+              canvas.width = width;
+              canvas.height = height;
+              document.getElementById("background").appendChild(canvas);
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            let selected = -1;
+            let moved = false;
+            let mouse;
+            change(ctx, points, -1);
+            canvas.oncontextmenu = () => {
+              return false;
+            };
+            document.getElementById("background").appendChild(canvas);
+
+            return canvas;
+          }
+
+          function lr(points, degree = 2, closed = true) {
+            let v = [];
+            if (!closed) for (let i = 1; i < degree; i++) v.push(points[0]);
+            for (let p of points) v.push(p, p);
+            const n = v.length;
+            const next = closed
+              ? (i) => (i + 1) % n
+              : (i) => Math.min(n - 1, i + 1);
+            for (let d = 1; d <= degree; d++) {
+              let u = [];
+              for (let i = 0; i < n; i++) {
+                let p = v[i];
+                let q = v[next(i)];
+                u.push([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]);
+              }
+              v = u;
+            }
+            return v;
+          }
+
+          function easeInOutCubic(p) {
+            return p<0.5 ? 4*p*p*p : (p-1)*(2*p-2)*(2*p-2)+1;
+          }
+
+          function updateSlider(value) {
+            let count = 0;
+            let tmp1, tmp2;
+            if (n === 0) {
+              n++;
+              blob = document.getElementById("background");
+
+              tmp1 = 100 + blob.clientWidth / 2 - 5;
+              tmp2 = -100 + blob.clientWidth / 2 - 5;
+            } else {
+              tmp1 = points[2][0];
+              tmp2 = points[6][0];
+            }
+
+            let id = setInterval(function(){
+              if (value < pvalue) {
+                points[2][0] = tmp1 - (pvalue - value) * 2 * easeInOutCubic(p);
+                points[6][0] = tmp2 - (pvalue - value) * 2 * easeInOutCubic(p);
+                tmp1 = points[2][0];
+                tmp2 = points[6][0];
+              } else {
+                points[2][0] = tmp1 + (value - pvalue) * 2 * easeInOutCubic(p);
+                points[6][0] = tmp2 + (value - pvalue) * 2 * easeInOutCubic(p);
+                tmp1 = points[2][0];
+                tmp2 = points[6][0];
+              }
+              var myCanvas = new fabric.StaticCanvas("c");
+              myCanvas.setWidth(
+                blob.clientWidth > 500 ? 800 : blob.clientWidth
+              );
+              myCanvas.setHeight(600);
+
+              let pts = points;
+              let f =
+                config.scheme == "LR"
+                  ? (pts) => lr(pts, config.degree)
+                  : config.scheme == "8 points"
+                  ? (pts) => fourPoint(pts)
+                  : (pts) => lr4(pts, config.degree);
+              for (let i = 0; i < config.subdiv; i++) pts = f(pts);
+
+              let pathString =
+                "M" + pts.map((p) => p.join(",")).join("L") + "Z";
+
+              let path = new fabric.Path(pathString, {
+                stroke: "rgba(255,255,255,0)",
+                fill: "rgba(235,0,255,0.8)",
+              });
+              let gradient = new fabric.Gradient({
+                type: "radial",
+                coords: {
+                  r1: 0,
+                  r2: path.width / 3,
+                  x1: path.width / 3,
+                  y1: path.height / 3,
+                  x2: path.width / 3,
+                  y2: path.height / 3,
+                },
+                colorStops: [
+                  {
+                    offset: 0,
+                    color: "rgba(235,0,255,0)",
+                  },
+                  {
+                    offset: 1,
+                    color: "rgba(235,0,255,0.3)",
+                  },
+                ],
+              });
+
+              path.set("fill", gradient);
+
+              myCanvas.add(path);
+
+              let svg = myCanvas.toSVG();
+
+              document.getElementById("background").innerHTML = svg;
+
+              count ++;
+              p += 0.05;
+
+              if( count == 20){
+                clearInterval(id);
+                pvalue = value;
+                count = 0;
+                p = 0.05;
+              }
+            }, 50);
+          }
+
+          function valueToText1(value) {
+            switch (value) {
+              case "1":
+                return "Light";
+              case "2":
+                return "Medium-Light";
+              case "3":
+                return "Medium";
+              case "4":
+                return "Medium-Full";
+              case "5":
+                return "Full";
+              case "6":
+                return "Bold";
+              case "7":
+                return "Rich";
+              default:
+                return "";
+            }
+          }
+
+          window.onload = function () {
+            var slider1 = document.getElementById("slider1");
+            slider1.addEventListener("mouseup", function () {
+              updateSlider(this.value);
+            });
+          };
+        </script>
+        <div class="space"></div>
+        <div class="slider-part">
+          <div class="text-group">
+            <div class="text1">Sweetness</div>
+            <div class="text2">Dry</div>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="7"
+            class="slider"
+            id="slider2"
+            onchange="updateSlider2(this.value)"
+          />
+          <div class="text-group">
+            <div class="text3">Sweet</div>
+            <div class="text4">Medium</div>
+            <div class="text3">Bone Dry</div>
+          </div>
+        </div>
+        <script>
+          function updateSlider2(value) {
+            count = 0;
+            let tmp1, tmp2;
+            if (n === 0) {
+              n++;
+              blob = document.getElementById("background");
+              tmp1 = -100 + blob.clientHeight / 2 - 5;
+              tmp2 = 100 + blob.clientHeight / 2 - 5;
+            } else {
+              tmp1 = points[0][1];
+              tmp2 = points[4][1];
+            }
+            let id = setInterval(function () {
+              if (value < pvalue2) {
+                points[0][1] = tmp1 - (pvalue2 - value) * 2 * easeInOutCubic(p);
+                points[4][1] = tmp2 - (pvalue2 - value) * 2 * easeInOutCubic(p);
+                tmp1 = points[0][1];
+                tmp2 = points[4][1];
+              } else {
+                points[0][1] = tmp1 + (value - pvalue2) * 2 * easeInOutCubic(p);
+                points[4][1] = tmp2 + (value - pvalue2) * 2 * easeInOutCubic(p);
+                tmp1 = points[0][1];
+                tmp2 = points[4][1];
+              }
+              var myCanvas = new fabric.StaticCanvas("c");
+              myCanvas.setWidth(
+                blob.clientWidth > 500 ? 800 : blob.clientWidth
+              );
+              myCanvas.setHeight(600);
+              let pts = points;
+              let f =
+                config.scheme == "LR"
+                  ? (pts) => lr(pts, config.degree)
+                  : config.scheme == "4 points"
+                  ? (pts) => fourPoint(pts)
+                  : (pts) => lr4(pts, config.degree);
+              for (let i = 0; i < config.subdiv; i++) pts = f(pts);
+
+              let pathString =
+                "M" + pts.map((p) => p.join(",")).join("L") + "Z";
+
+              let path = new fabric.Path(pathString, {
+                stroke: "rgba(255,255,255,0)",
+                fill: "rgba(235,0,255,0.8)",
+              });
+              let gradient = new fabric.Gradient({
+                type: "radial",
+                coords: {
+                  r1: 0,
+                  r2: path.width / 3,
+                  x1: path.width / 3,
+                  y1: path.height / 3,
+                  x2: path.width / 3,
+                  y2: path.height / 3,
+                },
+                colorStops: [
+                  {
+                    offset: 0,
+                    color: "rgba(235,0,255,0)",
+                  },
+                  {
+                    offset: 1,
+                    color: "rgba(235,0,255,0.3)",
+                  },
+                ],
+              });
+
+              path.set("fill", gradient);
+
+              myCanvas.add(path);
+
+              let svg = myCanvas.toSVG();
+
+              document.getElementById("background").innerHTML = svg;
+
+              count ++;
+              p += 0.05;
+
+              if( count == 20){
+                clearInterval(id);
+                pvalue2 = value;
+                count = 0;
+                p = 0.05;
+              }
+            }, 50);
+          }
+
+          function valueToText2(value) {
+            switch (value) {
+              case "1":
+                return "Bone Dry";
+              case "2":
+                return "Dry";
+              case "3":
+                return "Off-Dry";
+              case "4":
+                return "Semi-Sweet";
+              case "5":
+                return "Medium-Sweet";
+              case "6":
+                return "Sweet";
+              case "7":
+                return "Very Sweet";
+              default:
+                return "";
+            }
+          }
+
+          window.onload = function () {
+            var slider2 = document.getElementById("slider2");
+            updateSlider2(slider2.value);
+          };
+        </script>
+        <div class="space"></div>
+        <div class="slider-part">
+          <div class="text-group">
+            <div class="text1">Actidity</div>
+            <div class="text2">Creamy</div>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="7"
+            class="slider"
+            id="slider3"
+            onchange="updateSlider3(this.value)"
+          />
+          <div class="text-group">
+            <div class="text3">Target</div>
+            <div class="text3">Crisp</div>
+            <div class="text3">Buttery</div>
+            <div class="text3">Velvety</div>
+          </div>
+        </div>
+        <script>
+          function updateSlider3(value) {
+            count = 0;
+            let tmp1, tmp2, tmp3, tmp4;
+            if (n === 0) {
+              n++;
+              blob = document.getElementById("background");
+              tmp1 = 75 + blob.clientWidth / 2 - 5;
+              tmp2 = -70 + blob.clientHeight / 2 - 5;
+              tmp3 = -75 + blob.clientWidth / 2 - 5;
+              tmp4 = 70 + blob.clientHeight / 2 - 5;
+            } else {
+              tmp1 = points[1][0];
+              tmp2 = points[1][1];
+              tmp3 = points[5][0];
+              tmp4 = points[5][1];
+            }
+            let id = setInterval(function () {
+              if (value < pvalue3) {
+                points[1][0] = tmp1 + (pvalue3 - value) * 2 * easeInOutCubic(p);
+                points[1][1] = tmp2 - (pvalue3 - value) * 2 * easeInOutCubic(p);
+                points[5][0] = tmp3 + (pvalue3 - value) * 2 * easeInOutCubic(p);
+                points[5][1] = tmp4 - (pvalue3 - value) * 2 * easeInOutCubic(p);
+                tmp1 = points[1][0];
+                tmp2 = points[1][1];
+                tmp3 = points[5][0];
+                tmp4 = points[5][1];
+              } else {
+                points[1][0] = tmp1 - (value - pvalue3) * 2 * easeInOutCubic(p);
+                points[1][1] = tmp2 + (value - pvalue3) * 2 * easeInOutCubic(p);
+                points[5][0] = tmp3 - (value - pvalue3) * 2 * easeInOutCubic(p);
+                points[5][1] = tmp4 + (value - pvalue3) * 2 * easeInOutCubic(p);
+                tmp1 = points[1][0];
+                tmp2 = points[1][1];
+                tmp3 = points[5][0];
+                tmp4 = points[5][1];
+              }
+
+              var myCanvas = new fabric.StaticCanvas("c");
+              myCanvas.setWidth(
+                blob.clientWidth > 500 ? 800 : blob.clientWidth
+              );
+              myCanvas.setHeight(600);
+              let pts = points;
+              let f =
+                config.scheme == "LR"
+                  ? (pts) => lr(pts, config.degree)
+                  : config.scheme == "4 points"
+                  ? (pts) => fourPoint(pts)
+                  : (pts) => lr4(pts, config.degree);
+              for (let i = 0; i < config.subdiv; i++) pts = f(pts);
+
+              let pathString =
+                "M" + pts.map((p) => p.join(",")).join("L") + "Z";
+
+              let path = new fabric.Path(pathString, {
+                stroke: "rgba(255,255,255,0)",
+                fill: "rgba(235,0,255,0.8)",
+              });
+              let gradient = new fabric.Gradient({
+                type: "radial",
+                coords: {
+                  r1: 0,
+                  r2: path.width / 3,
+                  x1: path.width / 3,
+                  y1: path.height / 3,
+                  x2: path.width / 3,
+                  y2: path.height / 3,
+                },
+                colorStops: [
+                  {
+                    offset: 0,
+                    color: "rgba(235,0,255,0)",
+                  },
+                  {
+                    offset: 1,
+                    color: "rgba(235,0,255,0.3)",
+                  },
+                ],
+              });
+
+              path.set("fill", gradient);
+
+              myCanvas.add(path);
+
+              let svg = myCanvas.toSVG();
+
+              document.getElementById("background").innerHTML = svg;
+
+              count ++;
+              p += 0.05;
+
+              if( count == 20){
+                clearInterval(id);
+                pvalue3 = value;
+                count = 0;
+                p = 0.05;
+              }
+            }, 50);
+          }
+
+          function valueToText3(value) {
+            switch (value) {
+              case "1":
+                return "Velvety";
+              case "2":
+                return "Creamy";
+              case "3":
+                return "Buttery";
+              case "4":
+                return "Mellow";
+              case "5":
+                return "Fresh";
+              case "6":
+                return "Bright";
+              case "7":
+                return "Tart";
+              default:
+                return "";
+            }
+          }
+
+          window.onload = function () {
+            var slider3 = document.getElementById("slider3");
+            updateSlider3(slider3.value);
+          };
+        </script>
+        <div class="space"></div>
+        <div class="slider-part">
+          <div class="text-group">
+            <div class="text1">Finish</div>
+            <div class="text2">Lingering</div>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="7"
+            class="slider"
+            id="slider4"
+            onchange="updateSlider4(this.value)"
+          />
+          <div class="text-group">
+            <div class="text3">Smooth</div>
+            <div class="text3">Spicy</div>
+            <div class="text3">Bitter</div>
+          </div>
+        </div>
+        <script>
+          function updateSlider4(value) {
+            count = 0;
+            let tmp1, tmp2, tmp3, tmp4;
+            if (n === 0) {
+              n++;
+              blob = document.getElementById("background");
+              tmp1 = -75 + blob.clientWidth / 2 - 5;
+              tmp2 = -70 + blob.clientHeight / 2 - 5;
+              tmp3 = 75 + blob.clientWidth / 2 - 5;
+              tmp4 = 70 + blob.clientHeight / 2 - 5;
+            } else {
+              tmp1 = points[7][0];
+              tmp2 = points[7][1];
+              tmp3 = points[3][0];
+              tmp4 = points[3][1];
+            }
+            let id = setInterval(function () {
+              if (value < pvalue4) {
+                points[7][0] = tmp1 - (pvalue4 - value) * 2 * easeInOutCubic(p);
+                points[7][1] = tmp2 - (pvalue4 - value) * 2 * easeInOutCubic(p);
+                points[3][0] = tmp3 - (pvalue4 - value) * 2 * easeInOutCubic(p);
+                points[3][1] = tmp4 - (pvalue4 - value) * 2 * easeInOutCubic(p);
+                tmp1 = points[7][0];
+                tmp2 = points[7][1];
+                tmp3 = points[3][0];
+                tmp4 = points[3][1];
+              } else {
+                points[7][0] = tmp1 + (value - pvalue4) * 2 * easeInOutCubic(p);
+                points[7][1] = tmp2 + (value - pvalue4) * 2 * easeInOutCubic(p);
+                points[3][0] = tmp3 + (value - pvalue4) * 2 * easeInOutCubic(p);
+                points[3][1] = tmp4 + (value - pvalue4) * 2 * easeInOutCubic(p);
+                tmp1 = points[7][0];
+                tmp2 = points[7][1];
+                tmp3 = points[3][0];
+                tmp4 = points[3][1];
+              }
+
+              var myCanvas = new fabric.StaticCanvas("c");
+              myCanvas.setWidth(
+                blob.clientWidth > 500 ? 800 : blob.clientWidth
+              );
+              myCanvas.setHeight(600);
+              let pts = points;
+              let f =
+                config.scheme == "LR"
+                  ? (pts) => lr(pts, config.degree)
+                  : config.scheme == "4 points"
+                  ? (pts) => fourPoint(pts)
+                  : (pts) => lr4(pts, config.degree);
+              for (let i = 0; i < config.subdiv; i++) pts = f(pts);
+
+              let pathString =
+                "M" + pts.map((p) => p.join(",")).join("L") + "Z";
+
+              let path = new fabric.Path(pathString, {
+                stroke: "rgba(255,255,255,0)",
+                fill: "rgba(235,0,255,0.8)",
+              });
+              let gradient = new fabric.Gradient({
+                type: "radial",
+                coords: {
+                  r1: 0,
+                  r2: path.width / 3,
+                  x1: path.width / 3,
+                  y1: path.height / 3,
+                  x2: path.width / 3,
+                  y2: path.height / 3,
+                },
+                colorStops: [
+                  {
+                    offset: 0,
+                    color: "rgba(235,0,255,0)",
+                  },
+                  {
+                    offset: 1,
+                    color: "rgba(235,0,255,0.3)",
+                  },
+                ],
+              });
+
+              path.set("fill", gradient);
+
+              myCanvas.add(path);
+
+              let svg = myCanvas.toSVG();
+
+              document.getElementById("background").innerHTML = svg;
+
+              count ++;
+              p += 0.05;
+
+              if( count == 20){
+                clearInterval(id);
+                pvalue4 = value;
+                count = 0;
+                p = 0.05;
+              }
+            }, 50);
+          }
+
+          function valueToText4(value) {
+            switch (value) {
+              case "1":
+                return "Short";
+              case "2":
+                return "Clean";
+              case "3":
+                return "Smooth";
+              case "4":
+                return "Balanced";
+              case "5":
+                return "Lingering";
+              case "6":
+                return "Complex";
+              case "7":
+                return "Intense";
+              default:
+                return "";
+            }
+          }
+
+          window.onload = function () {
+            var slider4 = document.getElementById("slider4");
+            updateSlider4(slider4.value);
+          };
+        </script>
+        <div class="space"></div>
+        <div>
+          <button class="button" onClick="download()">Download</button>
+        </div>
+        <script>
+          function svgDataURL(svg) {
+            var svgAsXML = new XMLSerializer().serializeToString(svg);
+            return "data:image/svg+xml," + encodeURIComponent(svgAsXML);
+          }
+          function download() {
+            var dl = document.createElement("a");
+            document.body.appendChild(dl);
+            var svgElement = document.querySelector("#background svg");
+            dl.setAttribute("href", svgDataURL(svgElement));
+            dl.setAttribute("download", "blob.svg");
+            dl.click();
+          }
+        </script>
+      </div>
+    </div>
+  </body>
+</html>
